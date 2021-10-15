@@ -6,6 +6,9 @@ import resolvers from "./resolvers";
 import entities from "./entities";
 import { ApolloServer } from "apollo-server-express";
 import { createConnection } from "typeorm";
+import { User } from "./entities/User";
+import jwt from "jsonwebtoken";
+
 dotenv.config();
 
 const PORT = process.env.PORT || 8000 ;
@@ -28,6 +31,19 @@ const main = async () =>{
 
   const server = new ApolloServer({
     schema,
+    context: async ( { req, res } : { req: express.Request, res: express.Response } ) => {
+      let user;
+      if(req.headers.cookie) {
+        const token = req.headers.cookie.split("token=")[1];
+        if(token){
+          const decoded = jwt.verify(token, process.env.JWT_SECRET ||  "secret" ) as any;
+          user = await User.findByIds(decoded.id);
+          user = user[0];
+        }
+       
+      }
+      return { req, res, user };
+    },
   });
 
   await server.start();
