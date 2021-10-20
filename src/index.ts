@@ -8,6 +8,8 @@ import { ApolloServer } from "apollo-server-express";
 import { createConnection } from "typeorm";
 import { User } from "./entities/User";
 import jwt from "jsonwebtoken";
+import {authChecker} from "./utils/auth";
+import cors from "cors";
 
 dotenv.config();
 
@@ -27,7 +29,7 @@ const main = async () =>{
   })
   .catch((e) => console.log(e))
 
-  const schema = await buildSchema({ resolvers});
+  const schema = await buildSchema({ resolvers ,authChecker});
 
   const server = new ApolloServer({
     schema,
@@ -50,8 +52,17 @@ const main = async () =>{
 
   const app =express();
 
+  app.use( 
+    cors({
+      credentials: true,
+      origin:["https://studio.apollographql.com", "http://localhost:8000", "http://localhost:3000"]
+    })
+  );
+
+
   server.applyMiddleware({ app, cors: false });
 
+  
 
   app.listen(PORT , () => {
     console.log(`Server started on port ${PORT}`);
