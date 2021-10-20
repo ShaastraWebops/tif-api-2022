@@ -1,8 +1,11 @@
 import { Project } from "../entities/Project";
-import { Arg,Ctx,Field,InputType,Mutation, Query, Resolver } from "type-graphql";
+import { Arg,Authorized,Ctx,Field,InputType,Mutation, Query, Resolver } from "type-graphql";
 import { MyContext } from "../utils/context";
 import { User } from "../entities/User";
 import { Team } from "../entities/Team";
+// import { getRepository } from "typeorm";
+// import { parse } from "json2csv";
+
 
 @InputType("ProjectInput")
 export class ProjectInput{
@@ -35,9 +38,6 @@ export class ProjectInput{
     Q7: string;
 
     @Field()
-    Q8: string;
-
-    @Field()
     videolink : string;
 }
 
@@ -45,30 +45,60 @@ export class ProjectInput{
 @Resolver()
 export class ProjectResolver{
 
+    @Authorized(['LEADER'])
     @Mutation(() => Boolean)
     async fillProject( @Arg("data") data: ProjectInput, @Ctx() { user } : MyContext) {
         const userM = await User.findOneOrFail(user.id,{relations : ['team']})
         const team = userM.team;
-        console.log(team)
+        console.log("team",userM)
         const project = await Project.create({ ...data,team}).save();
-
+        user.isSubmitted = true;
+        await user.save();
         
         return !!project;
     }
 
-    //query for admin to fetch all questionnarie
+    @Authorized(['ADMIN'])
     @Query(() => [Project])
     async getProjects() {
-        return  await Project.find();
+        return  await Project.find({relations : ['team']});
     }
 
-    //query for admin to fetch questionnarie by id
+    // @Authorized(['ADMIN'])
     @Query(() => Project)
     async getProjectbyteamId(@Arg("teamid") teamId : string) {
         const team = await Team.findOneOrFail(teamId,{relations : ['project']});
-        // const project= await Project.findOneOrFail({ where: { team : team} });
-        return team.project;
+        const project= await Project.findOneOrFail({ where: { team : team.id} });
+        return project;
     }
+
+    // @Query(() => String)
+    // async exportCSV(@Arg("EventID") id: string) {
+        
+    //     const projectrepo = getRepository(Project);
+    //     let csv;
+        
+    //         const projects = Project.find({relations : ['team']});
+    //         let csvData = '"Project title ,"category","Overview","Uniqueness ","Technology Implemented ","Target crowd","IP Status","Partner Status","Miscellaneous Questions","Video Attachment"';
+    //         const csvHeading = ',"name","email","sjID","school","class"';
+    //         for (let i = 0; i < event.teamSize; i++) {
+    //             csvData += csvHeading;
+    //         }
+
+    //         registeredTeams.map((registeredTeam) => {
+
+    //             csvData += `\n "${registeredTeam.name}"`;
+
+    //             registeredTeam.members.map((member) => {
+    //                 const { name, email, sjID, school } = member;
+    //                 csvData += `, "${name}","${email}","${sjID}","${school}","${member.class}"`;
+    //             })
+    //         })
+    //         csv = csvData;
+    //     }
+
+    //     return csv
+    // }
     
 
 }

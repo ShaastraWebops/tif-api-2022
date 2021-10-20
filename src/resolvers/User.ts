@@ -1,9 +1,10 @@
 import { User } from "../entities/User";
-import {Arg, Ctx, Field, InputType, Mutation,Resolver} from "type-graphql";
+import {Arg, Authorized, Ctx, Field, InputType, Mutation,Query,Resolver} from "type-graphql";
 import { IsEmail } from "class-validator";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { MyContext } from "src/utils/context";
+import { MyContext } from "../utils/context";
+import { ADMINMAILLIST , UserRole } from "../utils/UserRole";
 
 
 @InputType("CreateUserInput")
@@ -29,14 +30,26 @@ export class LoginInput {
 	password: string;
 }
 
-@InputType("UpdatePasswordInput")
-export class UpdatePasswordInput {
+@InputType("ResetPasswordInput")
+export class ResetPasswordInput {
 	@Field()
+  @IsEmail()
 	email: string;
+
+  @Field()
+  otp : string;
 
 	@Field()
 	newPassword: string;
 }
+
+@InputType("RequestForgotPassInput")
+export class RequestForgotPassInput {
+    @Field()
+    @IsEmail()
+    email: string;
+}
+
 
 
 @Resolver(User)
@@ -49,8 +62,31 @@ export class UserResolver {
       const user = await User.create({ ...data}).save();
       let token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || "secret");
       res.cookie("token", token )
+      console.log(user.verificationOTP)
+      // const {name , email , verificationOTP } = user;
+      // await User.sendVerificationMail({ name , email , verificationOTP});
+
+
+      if(ADMINMAILLIST.includes(user.email)){
+        const { affected } = await User.update(user?.id, { role: UserRole.ADMIN })
+        if (affected !== 1) throw new Error("");
+    }
+
       return !! user ;
     }
+
+    @Mutation(() => Boolean)
+    async resendVerificationMail(@Arg("data") { email }: RequestForgotPassInput) {
+        const user = await User.findOneOrFail({ where: { email } });
+        const { name,verificationOTP , isVerified } = user;
+
+        if (isVerified) throw new Error("Email has been verified before");
+
+        await User.sendVerificationMail({ name, email , verificationOTP });
+
+        return true;
+    }
+
 
     @Mutation(() => User, { nullable: true })
     async login(@Arg("data") { email, password }: LoginInput, @Ctx() {res} : MyContext) {
@@ -60,7 +96,7 @@ export class UserResolver {
         if(!user.isVerified) throw new Error("Oops, email not verified!");
 
         const checkPass = await bcrypt.compare(password, user?.password);
-        if(!checkPass) throw new Error("Invalid Credential");
+        if(!checkPass) throw new Error("Invalid Credentials");
 
         let token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || "secret");
         res.cookie("token", token )
@@ -75,25 +111,32 @@ export class UserResolver {
       return user.id;
     }
 
+   
     @Mutation(() => Boolean)
-    async updatePassword(@Arg("data") data: UpdatePasswordInput) {
-      const password = await bcrypt.hash(data.newPassword, 13);
-      let user = await User.findOneOrFail({where : {email : data.email}});
-      user.password = password;
-      user = await User.save(user);
-      return !!user;
+    async resetPassword(@Arg("data") { email, otp, newPassword }: ResetPasswordInput) {
+        const user = await User.findOneOrFail({ where: {email} });
+
+        if (user.passwordOTP === otp) {
+            const password = await bcrypt.hash(newPassword, 13);
+            const { affected } = await User.update(user.id, { password });
+            return affected === 1
+        }else{
+          throw new Error("Invalid Otp");
+        }
     }
+
+    
 
     @Mutation(() => Boolean)
     async getPasswordOTP(@Arg("email") email: string) {
-      let user = await User.findOneOrFail({where : {email}});
-      user.passwordOTP = User.generateOTP();
-      user = await User.save(user);
-      // await User.sendMail({
-      //   name: user.name,
-      //   htmlPart: `<p>Your password reset code for Shaastra Prime is <strong>${user.passwordOTP}</strong> </p>`,
-      //   subject: "Reset Your Password | Shaastra Prime",
-      // });
+      const user = await User.findOneOrFail({ where: { email } });
+      if(!user) throw new Error("Email Not found");
+      
+      const passwordOTP = User.generateOTP();
+      await User.update(user.id, { passwordOTP });
+
+      const { name} = user;
+      await User.sendForgotResetMail({ name, email, verificationOTP : passwordOTP });
       return true;
     }
 
@@ -103,5 +146,17 @@ export class UserResolver {
 
         return true;
     }
+
+    @Query(() => [User], {nullable: true})
+    async getUsers() {
+        const users = await User.find({ order: { name: "ASC"} ,relations:['team']});
+        return { users };
+    }
+    @Authorized()
+    @Query(() => User, {nullable: true})
+    async me(@Ctx() { user } : MyContext) {
+        return await User.findOneOrFail({ where: { id: user.id }, relations : ['team'] });
+    }
+
 
 }
