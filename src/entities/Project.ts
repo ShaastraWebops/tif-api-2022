@@ -53,10 +53,6 @@ export class Project extends BaseEntity {
 
     @Column()
     @Field()
-    Q8: string;
-
-    @Column()
-    @Field()
     videolink : string;
 
     //relations
