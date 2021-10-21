@@ -50,13 +50,21 @@ export class ProjectResolver{
     async fillProject( @Arg("data") data: ProjectInput, @Ctx() { user } : MyContext) {
         const userM = await User.findOneOrFail(user.id,{relations : ['team']})
         const team = userM.team;
-        console.log("team",userM)
         const project = await Project.create({ ...data,team}).save();
         user.isSubmitted = true;
         await user.save();
         
         return !!project;
     }
+
+    @Authorized()
+    @Mutation(() => Boolean)
+    async updateProject( @Arg("data") data: ProjectInput, @Ctx() { user } : MyContext) {
+        const userM = await User.findOneOrFail(user.id,{relations : ['team']});
+        const project = await Project.update({team : userM.team},{...data});
+        return !!project;
+    }
+
 
     @Authorized(['ADMIN'])
     @Query(() => [Project])
