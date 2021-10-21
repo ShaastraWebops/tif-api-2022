@@ -2,7 +2,6 @@ import { Team } from "../entities/Team";
 import { Arg, Authorized, Ctx, Field, FieldResolver, InputType, Mutation, Query, Resolver, Root } from "type-graphql";
 import { MyContext } from "../utils/context";
 import { User } from "../entities/User";
-import { UserRole } from "../utils/UserRole";
 
 @InputType("MemberInput")
 export class MemberInput{
@@ -44,7 +43,6 @@ export class TeamResolver {
         const team = await Team.create();
         team.name = name;
         team.members = [];
-        user.role = UserRole.LEADER;
         const teamlead = members.filter(member => {
             return member.email === user.email 
             })

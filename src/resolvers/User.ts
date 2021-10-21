@@ -59,7 +59,12 @@ export class UserResolver {
     async registerUser(
       @Arg("data") data:RegisterUserInput ,@Ctx() {res} : MyContext
     ) : Promise<Boolean>{
+      const userM = await User.findOneOrFail({where : {email : data.email}});
+      if(userM && userM.role === UserRole.LEADER) throw new Error("User already registered")
+      if(userM && userM.role === UserRole.MEMBER) throw new Error("Email already registered in a team")
       const user = await User.create({ ...data}).save();
+      user.role = UserRole.LEADER;
+      await user.save();
       let token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || "secret");
       res.cookie("token", token )
       console.log(user.verificationOTP)
@@ -94,7 +99,7 @@ export class UserResolver {
         if(!user) throw new Error("Account Not Found");
 
         if(!user.isVerified) throw new Error("Oops, email not verified!");
-
+        
         const checkPass = await bcrypt.compare(password, user?.password);
         if(!checkPass) throw new Error("Invalid Credentials");
 
@@ -131,7 +136,6 @@ export class UserResolver {
     async getPasswordOTP(@Arg("email") email: string) {
       const user = await User.findOneOrFail({ where: { email } });
       if(!user) throw new Error("Email Not found");
-      
       const passwordOTP = User.generateOTP();
       await User.update(user.id, { passwordOTP });
 
