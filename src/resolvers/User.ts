@@ -59,7 +59,7 @@ export class UserResolver {
     async registerUser(
       @Arg("data") data:RegisterUserInput ,@Ctx() {res} : MyContext
     ) : Promise<Boolean>{
-      const userM = await User.findOneOrFail({where : {email : data.email}});
+      const userM = await User.findOne({where : {email : data.email}});
       if(userM && userM.role === UserRole.LEADER) throw new Error("User already registered")
       if(userM && userM.role === UserRole.MEMBER) throw new Error("Email already registered in a team")
       const user = await User.create({ ...data}).save();
@@ -68,8 +68,8 @@ export class UserResolver {
       let token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || "secret");
       res.cookie("token", token )
       console.log(user.verificationOTP)
-      // const {name , email , verificationOTP } = user;
-      // await User.sendVerificationMail({ name , email , verificationOTP});
+      const {name , email , verificationOTP } = user;
+      await User.sendVerificationMail({ name , email , verificationOTP});
 
 
       if(ADMINMAILLIST.includes(user.email)){
