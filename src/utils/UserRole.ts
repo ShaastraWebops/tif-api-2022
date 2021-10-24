@@ -4,4 +4,4 @@ export enum UserRole {
     MEMBER = "MEMBER"
   }
 
-  export const ADMINMAILLIST = ["webops@shaastra.org"]
+  export const ADMINMAILLIST = ["webops@shaastra.org","tif@shaastra.org"]
