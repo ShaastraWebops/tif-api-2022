@@ -95,10 +95,10 @@ export class UserResolver {
 
     @Mutation(() => User, { nullable: true })
     async login(@Arg("data") { email, password }: LoginInput, @Ctx() {res} : MyContext) {
-        const user = await User.findOneOrFail({ where: { email} });
+        const user = await User.findOne({ where: { email} });
         if(!user) throw new Error("Account Not Found");
 
-        if(!user.isVerified) throw new Error("Oops, email not verified!");
+        //if(!user.isVerified) throw new Error("Oops, email not verified!");
         
         const checkPass = await bcrypt.compare(password, user?.password);
         if(!checkPass) throw new Error("Invalid Credentials");
