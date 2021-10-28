@@ -59,7 +59,7 @@ export class TeamResolver {
         await user.save();
 
         await Promise.all(teammembers?.map(async (member) => {
-            const userM = await User.create({...member,password : member.email}).save();
+            const userM = await User.create({...member}).save();
                        
             await userM.save();
 
@@ -97,6 +97,31 @@ export class TeamResolver {
         return team ;
 
     }
+
+    // @Query(()=> String)
+    // async exportCSV(){
+    //     const registeredTeams = await Team.find({relations: ["members","project"], select: ["name"] })//) as unknown) as CSVExportOutput[];
+
+    //         let csvData = '"team name"';
+    //         const csvHeading = ',"name","email","contactno","Institution","city","state"';
+    //         for (let i = 0; i < 4; i++) {
+    //             csvData += csvHeading;
+    //         }
+
+    //         registeredTeams.map((registeredTeam) => {
+
+    //             csvData += `\n "${registeredTeam.name}"`;
+
+    //             registeredTeam.members.map((member) => {
+    //                 const { name, email, contactno , institution } = member;
+    //                 csvData += `, "${name}","${email}","${sjID}","${school}","${member.class}"`;
+    //             })
+    //         })
+    //         csv = csvData;
+    //     }
+
+    //     return csv
+    // }
 
     @FieldResolver(() => [User])
     async members(@Root() { id }: Team ) {

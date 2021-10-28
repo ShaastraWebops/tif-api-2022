@@ -136,6 +136,7 @@ export class UserResolver {
     async getPasswordOTP(@Arg("email") email: string) {
       const user = await User.findOneOrFail({ where: { email } });
       if(!user) throw new Error("Email Not found");
+      if(user.password === null) throw new Error("Account not found")
       const passwordOTP = User.generateOTP();
       await User.update(user.id, { passwordOTP });
 

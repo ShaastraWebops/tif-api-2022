@@ -16,9 +16,10 @@ export class User extends BaseEntity {
     @BeforeInsert()
     async setId() {
       this.id = cuid();
-      this.password = await bcrypt.hash(this.password, 13);
+      if(this.password){
+        this.password = await bcrypt.hash(this.password, 13);
+      }
       this.verificationOTP = User.generateOTP();
-      console.log(this.verificationOTP);
     }
 
     static generateOTP() {
