@@ -81,7 +81,7 @@ export class TeamResolver {
         return !!team;
     }
 
-    // @Authorized(['ADMIN'])
+    @Authorized(['ADMIN'])
     @Query(() => [Team])
     async getTeams(){
         const teams = await Team.find({relations : ["members","project"]});
@@ -97,32 +97,39 @@ export class TeamResolver {
         return team ;
 
     }
+    
+    @Authorized(['ADMIN'])
+    @Query(()=> String)
+    async exportCSV(){
+        const registeredTeams = await Team.find({relations: ["members","project"], select: ["name"] })//) as unknown) as CSVExportOutput[];
 
-    // @Query(()=> String)
-    // async exportCSV(){
-    //     const registeredTeams = await Team.find({relations: ["members","project"], select: ["name"] })//) as unknown) as CSVExportOutput[];
+            let csvData = '"team name"';
+            // const csvHeading = ',"name","email","contactno","Institution","city","state"';
+            // for (let i = 0; i < 4; i++) {
+            //     csvData += csvHeading;
+            // }
+            // const projectHeading = ',"Title","Category","Overview","Uniqueness","Technology Implemented","Target crowd","IP Status","Partner Status","Miscellaneous Questions","Video link"';
+            // csvData += projectHeading;
+            let csv : string;
 
-    //         let csvData = '"team name"';
-    //         const csvHeading = ',"name","email","contactno","Institution","city","state"';
-    //         for (let i = 0; i < 4; i++) {
-    //             csvData += csvHeading;
-    //         }
+            registeredTeams.map(async (registeredTeam) => {
 
-    //         registeredTeams.map((registeredTeam) => {
+                csvData += `\n ${registeredTeam.name}`;
 
-    //             csvData += `\n "${registeredTeam.name}"`;
+                registeredTeam.members.map((member) => {
+                    const { name, email, contactno , institution , city , state } = member;
+                    csvData += `, "${name}","${email}","${contactno}","${institution}","${city}","${state}"`;
+                })
+                const project = registeredTeam.project;
+                const { title , category , Q1 , Q2 , Q3 , Q4 , Q5 , Q6 ,Q7} = project;
+                csvData += `, "${title}","${category}","${Q1}","${Q2}","${Q3}","${Q4}","${Q5}","${Q6}","${Q7}"`;
+                
+            })
+           csv = csvData;
+           return csv
+        }
 
-    //             registeredTeam.members.map((member) => {
-    //                 const { name, email, contactno , institution } = member;
-    //                 csvData += `, "${name}","${email}","${sjID}","${school}","${member.class}"`;
-    //             })
-    //         })
-    //         csv = csvData;
-    //     }
-
-    //     return csv
-    // }
-
+    
     @FieldResolver(() => [User])
     async members(@Root() { id }: Team ) {
         const team = await Team.findOneOrFail(id, { relations: ["members"] });
