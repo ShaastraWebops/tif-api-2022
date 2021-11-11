@@ -98,32 +98,38 @@ export class TeamResolver {
 
     }
     
-    @Authorized(['ADMIN'])
+    // @Authorized(['ADMIN'])
     @Query(()=> String)
     async exportCSV(){
         const registeredTeams = await Team.find({relations: ["members","project"], select: ["name"] })//) as unknown) as CSVExportOutput[];
 
             let csvData = '"team name"';
-            // const csvHeading = ',"name","email","contactno","Institution","city","state"';
-            // for (let i = 0; i < 4; i++) {
-            //     csvData += csvHeading;
-            // }
-            // const projectHeading = ',"Title","Category","Overview","Uniqueness","Technology Implemented","Target crowd","IP Status","Partner Status","Miscellaneous Questions","Video link"';
-            // csvData += projectHeading;
+            const projectHeading = ',"Title","Category","Overview","Uniqueness","Technology Implemented","Target crowd","IP Status","Partner Status","Miscellaneous Questions","Video link"';
+            csvData += projectHeading;
+            const csvHeading = ',"name","email","contactno","Institution","city","state"';
+            for (let i = 0; i < 4; i++) {
+                csvData += csvHeading;
+            }
+            
             let csv : string;
 
             registeredTeams.map(async (registeredTeam) => {
 
-                csvData += `\n ${registeredTeam.name}`;
+                if(!registeredTeam.project){
+                    return
+                }
+               
+                const project = registeredTeam.project;
+                const { title , category , Q1 , Q2 , Q3 , Q4 , Q5 , Q6 ,Q7 , videolink} = project;
+                csvData += `\n ${registeredTeam.name},"${title}","${category}","${Q1}","${Q2}","${Q3}","${Q4}","${Q5}","${Q6}","${Q7}","${videolink}"`;
+            
 
                 registeredTeam.members.map((member) => {
                     const { name, email, contactno , institution , city , state } = member;
                     csvData += `, "${name}","${email}","${contactno}","${institution}","${city}","${state}"`;
                 })
-                const project = registeredTeam.project;
-                const { title , category , Q1 , Q2 , Q3 , Q4 , Q5 , Q6 ,Q7} = project;
-                csvData += `, "${title}","${category}","${Q1}","${Q2}","${Q3}","${Q4}","${Q5}","${Q6}","${Q7}"`;
-                
+              
+                   
             })
            csv = csvData;
            return csv
