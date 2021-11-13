@@ -154,8 +154,8 @@ export class UserResolver {
 
     @Query(() => [User], {nullable: true})
     async getUsers() {
-        const users = await User.find({ order: { name: "ASC"} ,relations:['team']});
-        return { users };
+        const users = await User.find({ relations:['team']});
+        return  users ;
     }
     @Authorized()
     @Query(() => User, {nullable: true})
