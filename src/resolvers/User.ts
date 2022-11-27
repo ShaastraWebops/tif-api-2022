@@ -65,7 +65,7 @@ export class UserResolver {
       const user = await User.create({ ...data}).save();
       user.role = UserRole.LEADER;
       await user.save();
-      let token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || "secret");
+      let token = jwt.sign({ id: user.id }, "secret");
       res.cookie("token", token )
       console.log(user.verificationOTP)
       const {name , email , verificationOTP } = user;
@@ -103,7 +103,7 @@ export class UserResolver {
         const checkPass = await bcrypt.compare(password, user?.password);
         if(!checkPass) throw new Error("Invalid Credentials");
 
-        let token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || "secret");
+        let token = jwt.sign({ id: user.id }, "secret");
         res.cookie("token", token )
 
         return user;

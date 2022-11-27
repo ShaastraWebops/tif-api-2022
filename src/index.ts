@@ -13,13 +13,13 @@ import cors from "cors";
 
 dotenv.config();
 
-const PORT = process.env.PORT || 8000 ;
+const PORT = 8000 ;
 
 const main = async () =>{
 
   await createConnection({
     type: "postgres",
-    url: process.env.DATABASE_URL,
+    url: "postgresql://postgres:postgres@localhost:5433/tif",
     entities,
     synchronize: true,
     logging: true,
@@ -38,7 +38,7 @@ const main = async () =>{
       if(req.headers.cookie) {
         const token = req.headers.cookie.split("token=")[1];
         if(token){
-          const decoded = jwt.verify(token, process.env.JWT_SECRET ||  "secret" ) as any;
+          const decoded = jwt.verify(token, "secret" ) as any;
           user = await User.findByIds(decoded.id);
           user = user[0];
         }
