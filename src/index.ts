@@ -19,7 +19,7 @@ const main = async () =>{
 
   await createConnection({
     type: "postgres",
-    url: "postgresql://postgres:postgres@localhost:5433/tif",
+    url: "postgresql://doadmin:AVNS_iPkTZu70FTTANcTE3b6@db-postgresql-blr1-60143-do-user-7555493-0.b.db.ondigitalocean.com:25060/defaultdb",
     entities,
     synchronize: true,
     logging: true,
